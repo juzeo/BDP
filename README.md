@@ -27,5 +27,6 @@
 - 연산 결과를 토대로 핵심 질문에 대한 그래피 및 지도 등 알맞는 방법으로 시각화
 
 ## AI Tool Usage
-- 
+- Gemini : 대중교통 API 데이터 스크립트 작성 중 발생한 JSONDecodeError 디버깅 및 URL 파라미터 오류 해결
+- Gemini : 기상청 API 데이터 스크립트 작성 중 발생한 EmptyDataError 디버깅 해결
 
