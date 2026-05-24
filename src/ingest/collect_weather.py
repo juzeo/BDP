@@ -4,6 +4,8 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+load_dotenv()
+weather_key = os.environ.get("WEATHER_API_KEY")
 
 cols = ["TM","STN","WS_AVG","WR_DAY","WD_MAX","WS_MAX","WS_MAX_TM","WD_INS",
         "WS_INS","WS_INS_TM","TA_AVG","TA_MAX","TA_MAX_TM","TA_MIN","TA_MIN_TM",
@@ -21,21 +23,22 @@ def get_weather_data(target_date):
         url = f"https://apihub.kma.go.kr/api/typ01/url/kma_sfcdd.php?tm={target_date}&stn=0&help=1&authKey={weather_key}"
         response = requests.get(url)
         content = response.text.strip()
-
+        
+       
         if not content or all(line.startswith('#') for line in content.splitlines()):
             return None
-
+        df = pd.read_csv(io.StringIO(content), comment='#', header=None)
+                
+                        # 4. 결측치 열 정리
+        if df.iloc[:, -1].isnull().all():
+            df = df.iloc[:, :-1]
+                                                            
+        df.columns = cols
+        return df
     except Exception as e:
         print(f"날씨 데이터 요청 중 오류 발생: {e}")
         
-    
-    df = pd.read_csv(io.StringIO(response.text), comment='#', header=None)
-    if df.iloc[:,-1].isnull().all():
-        df = df.iloc[:,:-1] #마지막열 삭제(결측치)
-    df.columns = cols
-    # df =response.text
-
-    return df
+   
 def get_weather_data_range(start_date, end_date):
     start = datetime.strptime(start_date, "%Y%m%d")
     end = datetime.strptime(end_date, "%Y%m%d")
@@ -55,6 +58,6 @@ def get_weather_data_range(start_date, end_date):
         result_df = pd.concat(df_list, ignore_index=True)
         return result_df
 
-result = get_weather_data_range("20240101", "20240131")
+result = get_weather_data_range("20230101", "20231231")
 print(result.head())
-result.to_csv("weather_data_2024_01.csv", index=False, encoding='utf-8')
+result.to_csv("weather_data_2023.csv", index=False, encoding='utf-8')
