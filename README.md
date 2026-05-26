@@ -29,4 +29,5 @@
 ## AI Tool Usage
 - Gemini : 대중교통 API 데이터 스크립트 작성 중 발생한 JSONDecodeError 디버깅 및 URL 파라미터 오류 해결
 - Gemini : 기상청 API 데이터 스크립트 작성 중 발생한 EmptyDataError 디버깅 해결
+- Gemini : 일주일 데이터 중 주말데이터만 가져오는 방법의 아이디어 획득
 
