@@ -17,13 +17,13 @@ spark = SparkSession.builder.appName("spark_processing").getOrCreate()
 
 spark.conf.set
 
-# bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header=True, inferschema=True)
-# subway_df = spark.read.option("encoding","utf-8-sig").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferschema=True)
-# weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferschema=True)
+bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header=True, inferschema=True)
+subway_df = spark.read.option("encoding","utf-8-sig").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferschema=True)
+weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferschema=True)
 
-bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
-subway_df = spark.read.csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header = True, inferSchema=True)
-weather_df = spark.read.csv(f"{raw_folder}/weather_data_*.csv", header = True, inferSchema=True)
+# bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
+# subway_df = spark.read.csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header = True, inferSchema=True)
+# weather_df = spark.read.csv(f"{raw_folder}/weather_data_*.csv", header = True, inferSchema=True)
 
 
 # 다운 데이터는 사용일자 api는 USE_YMD
@@ -32,16 +32,17 @@ subway_df = subway_df.withColumn("사용일자",to_date(col("사용일자").cast
 weather_df = bus_df.withColumn("TM",to_date(col("TM").cast("string"),"yyyyMMdd"))
 
 #서울 지점 번호 108
-seoul_weather = weather_df[weather_df['STN']==108].copy()
+seoul_weather = weather_df.filter(col["STN"]==108).na.fill({"RN_DAY":0})
 
-seoul_weather['RN_DAY']= seoul_weather['RN_DAY'].fillna(0)
+day_bus = bus_df.groupBy("사용일자").agg(
+    sum("승차총승객수").alias("승차총승객수"),
+    sum("하차총승객수").alias("하차총승객수")
+).withColumn("버스승객수",  col("승차총승객수")+col("하차총승객수"))
 
-day_bus = bus_df.groupby('사용일자')[['승차총승객수','하차총승객수']].sum().reset_index()
-day_bus['버스승객수'] =  day_bus['승차총승객수']+day_bus['하차총승객수']
-
-day_subway = subway_df.groupby('사용일자')[['승차총승객수','하차총승객수']].sum().reset_index()
-day_subway['지하철승객수'] =  day_subway['승차총승객수']+day_subway['하차총승객수']
-
+day_subway = subway_df.groupBy("사용일자").agg(
+    sum("승차총승객수").alias("승차총승객수"),
+    sum("하차총승객수").alias("하차총승객수")
+).withColumn("지하철승객수",  col("승차총승객수")+col("하차총승객수"))
 merged_df = day_bus.join(day_subway,"사용일자","inner")\
                     .join(seoul_weather,day_bus.사용일자==seoul_weather.TM,"inner")
 
