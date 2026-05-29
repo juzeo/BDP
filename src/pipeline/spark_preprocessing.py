@@ -17,12 +17,12 @@ processed_folder = os.path.join(root, 'data','processed')
 
 spark = SparkSession.builder.appName("spark_processing").getOrCreate()
 
-spark.conf.set
+#spark.conf.set
 
 bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header=True, inferSchema=True)
 subway_df = spark.read.option("encoding","utf-8").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferSchema=True)
 weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_*.csv", header=True, inferSchema=True)
-dust_df = spark.read.option("encoding","co949").csv(f"{raw_folder}/dust_data_*.csv", header=True, inferSchema=True)
+dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_*.csv", header=True, inferSchema=True)
 
 
 # bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
@@ -34,8 +34,8 @@ dust_df = spark.read.option("encoding","co949").csv(f"{raw_folder}/dust_data_*.c
 bus_df = bus_df.withColumn("사용일자",to_date(col("사용일자").cast("string"),"yyyyMMdd"))
 subway_df = subway_df.withColumn("사용일자",to_date(col("사용일자").cast("string"),"yyyyMMdd"))
 weather_df = weather_df.withColumn("TM",to_date(col("TM").cast("string"),"yyyyMMdd"))
-dust_df = weather_df.withColumn("TM",to_date(substring(col("TM", 1,8),"yyyyMMdd"))\
-                                .withColumn("PM10",col("PM10").cast(IntegerType())))
+dust_df = weather_df.withColumn("TM",to_date(substring(col("TM"), 1,8),"yyyyMMdd"))\
+                                .withColumn("PM10",col("PM10").cast(IntegerType()))
 
 #서울 지점 번호 108
 seoul_weather = weather_df.filter(col("STN")==108).na.fill({"RN_DAY":0})
@@ -55,7 +55,7 @@ day_dust = dust_df.groupBy("TM").agg(avg("PM10").alias("일평균PM10"))
 
 merged_df = day_bus.join(day_subway,"사용일자","inner")\
                     .join(seoul_weather,day_bus.사용일자==seoul_weather.TM,"inner")\
-                    .join(day_dust, "PM","left")
+                    .join(day_dust, "사용일자","left")
 
 merged_df = merged_df.withColumn("IS_RAINY",
                                  when(col("RN_DAY")>=20, "많이 옴")
@@ -64,9 +64,9 @@ merged_df = merged_df.withColumn("IS_RAINY",
                                  ).withColumn("평일여부",
                                     when(dayofweek(col("사용일자")).isin([1,7]),"주말").otherwise("평일")
                                 ).withColumn("황사등급",
-                                    when(col("일평균PM")<=30,"좋음")
-                                    .when(col("일평균PM")<=80,"보통")
-                                    .when(col("일평균PM")<=150,"나쁨")
+                                    when(col("일평균PM10")<=30,"좋음")
+                                    .when(col("일평균P10")<=80,"보통")
+                                    .when(col("일평균P10M")<=150,"나쁨")
                                     .otherwise("매우 나쁨"))
 result_pandas_df = merged_df.select("사용일자","RN_DAY","IS_RAINY","버스승객수","지하철승객수","일평균PM10","황사등급","평일여부").toPandas()
 
