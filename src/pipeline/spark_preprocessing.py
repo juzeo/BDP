@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 from pyspark.sql import SparkSession
+from pyspark.sql.types import IntegerType
 from pyspark.sql.functions import *
 
+if len(sys.argv) < 2:
+    print("YYYYMM형식 필요")
+    sys.exit(1)
 def auto_encoding(path):
     with open(path, 'rb') as file:
         raw_data = file.read(100000)
@@ -12,17 +17,18 @@ def auto_encoding(path):
 
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
-raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
+raw_folder = "hdfs:///user/maria_dev/BDP/data/raw"
 processed_folder = os.path.join(root, 'data','processed')
 
-spark = SparkSession.builder.appName("spark_processing").getOrCreate()
+target_ym = sys.argv[1]
+spark = SparkSession.builder.appName(f"spark_processing_{target_ym}").config("spark.sql.catalogImplementation","hive").enableHiveSupport().getOrCreate()
 
 #spark.conf.set
 
-bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header=True, inferSchema=True)
-subway_df = spark.read.option("encoding","utf-8").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferSchema=True)
-weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_*.csv", header=True, inferSchema=True)
-dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_*.csv", header=True, inferSchema=True)
+bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+subway_df = spark.read.option("encoding","utf-8").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_{target_ym}.csv", header=True, inferSchema=True)
+dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{target_ym}.csv", header=True, inferSchema=True)
 
 
 # bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
@@ -31,10 +37,10 @@ dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_*.c
 
 
 # 다운 데이터는 사용일자 api는 USE_YMD
-bus_df = bus_df.withColumn("사용일자",to_date(col("사용일자").cast("string"),"yyyyMMdd"))
+bus_df = bus_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
 subway_df = subway_df.withColumn("사용일자",to_date(col("사용일자").cast("string"),"yyyyMMdd"))
 weather_df = weather_df.withColumn("TM",to_date(col("TM").cast("string"),"yyyyMMdd"))
-dust_df = weather_df.withColumn("TM",to_date(substring(col("TM"), 1,8),"yyyyMMdd"))\
+dust_df = dust_df.withColumn("TM",to_date(substring(col("TM"), 1,8),"yyyyMMdd"))\
                                 .withColumn("PM10",col("PM10").cast(IntegerType()))
 
 #서울 지점 번호 108
@@ -42,9 +48,9 @@ seoul_weather = weather_df.filter(col("STN")==108).na.fill({"RN_DAY":0})
 seoul_dust = dust_df.filter(col("STN_ID")==108).na.fill({"PM_10":0})
 
 day_bus = bus_df.groupBy("사용일자").agg(
-    sum("승차총승객수").alias("승차총승객수"),
-    sum("하차총승객수").alias("하차총승객수")
-).withColumn("버스승객수",  col("승차총승객수")+col("하차총승객수"))
+    sum("GTON_TNOPE").alias("GTON_TNOPE"),
+    sum("GTOFF_TNOPE").alias("GTOFF_TNOPE")
+).withColumn("버스승객수",  col("GTON_TNOPE")+col("GTOFF_TNOPE"))
 
 day_subway = subway_df.groupBy("사용일자").agg(
     sum("승차총승객수").alias("승차총승객수"),
@@ -66,12 +72,35 @@ merged_df = merged_df.withColumn("IS_RAINY",
                                 ).withColumn("황사등급",
                                     when(col("일평균PM10")<=30,"좋음")
                                     .when(col("일평균P10")<=80,"보통")
-                                    .when(col("일평균P10M")<=150,"나쁨")
-                                    .otherwise("매우 나쁨"))
-result_pandas_df = merged_df.select("사용일자","RN_DAY","IS_RAINY","버스승객수","지하철승객수","일평균PM10","황사등급","평일여부").toPandas()
+                                    .when(col("일평균PM10")<=150,"나쁨")
+                                    .otherwise("매우 나쁨")
+                                ).withColumn("악천후",
+                                    when(col("TA_MAX")>=35,"폭염")
+                                    .when(col("TA_MIN")<=-15,"한파")
+                                    .otherwise("정상"))
+
+merged_df = merged_df.withColumn("YYYYMM",date_format(col("사용일자"),"yyyyMM"))
+result_df = merged_df.select(
+    col("사용일자").alias("use_date"),
+    col("RN_DAY").alias("rain_day"),
+    col("IS_RAINY").alias("is_rainy"),
+    col("버스승객수").alias("bus_passenger"),
+    col("지하철승객수").alias("subway_passenger"),
+    col("일평균PM10").alias("avg_pm10"),
+    col("황사등급").alias("dust_grade"),
+    col("평일여부").alias("is_weekday"),
+    col("YYYYMM")
+)
+
+hive_db = "public_transport_weather"
+hive_table="weather_pt_correlation"
+full_table_name=f"{hive_db}.{hive_table}"
+
+result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
+
 
 save_path  = os.path.join(processed_folder, "Weather_PT_Correlation.csv")
-result_pandas_df.to_csv(save_path, index=False, encoding = 'utf-8-sig')
+result_df.to_csv(save_path, index=False, encoding = 'utf-8-sig')
 
 print("processing complete")
 spark.stop()

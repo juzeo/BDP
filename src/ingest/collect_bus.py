@@ -3,7 +3,10 @@ import requests
 import pandas as pd
 import time
 import os
+import subprocess
 from dotenv import load_dotenv
+import calendar
+import sys
 
 load_dotenv()
 
@@ -23,22 +26,29 @@ def get_bus_data(target_day):
     all_data = []
     while True:
         url = f"http://openapi.seoul.go.kr:8088/{seoul_bus_key}/json/CardBusStatisticsServiceNew/{start}/{end}/{target_day}"
-        response = requests.get(url)
-        data = response.json()
+        try:
+            response = requests.get(url)
+            data = response.json()
 
-        
-        if start ==1:
-            total_count=data["CardBusStatisticsServiceNew"]['list_total_count']
-            print(f"총 데이터 수: {total_count}")
-        
-        rows = data["CardBusStatisticsServiceNew"]['row']
-        all_data.extend(rows)
-        
-        if len(rows)<1000 or (start +len(rows)-1)>=total_count:
-            break
+            
+            if start ==1:
+                total_count=data["CardBusStatisticsServiceNew"]['list_total_count']
+                print(f"총 데이터 수: {total_count}")
+            
+            rows = data["CardBusStatisticsServiceNew"]['row']
+            all_data.extend(rows)
+            
+            if len(rows)<1000 or (start +len(rows)-1)>=total_count:
+                break
 
-        start += 1000
-        end += 1000
+            start += 1000
+            end += 1000
+
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"에러 {e}")
+            time.sleep(5)
+            continue
 
     return pd.DataFrame(all_data)
     
@@ -75,23 +85,58 @@ def get_bus_data_range(start_date, end_date):
     start = datetime.strptime(start_date, '%Y%m%d')
     end = datetime.strptime(end_date, '%Y%m%d')
     
-    df_list =[]
+    # df_list =[]
 
-    for i in range((end-start).days +1):
-        date = (start+timedelta(days=i)).strftime("%Y%m%d")
+    # for i in range((end-start).days +1):
+    #     date = (start+timedelta(days=i)).strftime("%Y%m%d")
 
+    #     df = get_bus_data(date)
+
+    #     if df is not None:
+    #         df_list.append(df)
+    #         print(f"{date} 수집완료")
+    #     else:
+    #         print(f"{date} 데이터 형식 오류, {df}")
+    # if df_list:
+    #     result_df = pd.concat(df_list, ignore_index=True)
+    #     return result_df
+    # else:
+    #     return None
+    dates = [(start+timedelta(days=i)).strftime("%Y%m%d")for i in range((end - start).days+1)]
+    
+    month_data = {}
+
+    for date in dates:
+        month_name = date[:6]
         df = get_bus_data(date)
 
         if df is not None:
-            df_list.append(df)
+            if month_name not in month_data:
+                month_data[month_name]=[]
+            month_data[month_name].append(df)
             print(f"{date} 수집완료")
         else:
             print(f"{date} 데이터 형식 오류, {df}")
-    if df_list:
-        result_df = pd.concat(df_list, ignore_index=True)
-        return result_df
-    else:
-        return None
+    for month, df_list in month_data.items():
+        if df_list:
+            result = pd.concat(df_list, ignore_index=True)
+            file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_{month}.csv")
+            result.to_csv(file_path, index=False, encoding='utf-8')
+            hdfs_dir = "user/maria_dev/BDP/data/raw"
+
+            hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
+            
+            try:
+                subprocess.run(hdfs_commnad, shell=True, check=True)
+                print("HDFS 적재완료")
+
+            except subprocess.CalledProcessError as e:
+                print(f"HDFS 적재 실패: {e}")
+                
+            
+            print(f"{month} 저장 완료")
+
+    
 
 def get_bus_data_daily():
     target_date = (datetime.now()-timedelta(days=1)).strftime("%Y%m%d")
@@ -104,12 +149,52 @@ def get_bus_data_daily():
         file_exists = os.path.isfile(file_path)
         df.to_csv(file_path, mode='a',index=False, header=not file_exists, enccoding='utf-8')
         
+def get_bus_data_month(start_date, end_date):
+    start = datetime.strptime(str(start_date), "%Y%m")
+    end = datetime.strptime(str(end_date), "%Y%m")
+
+    
+    while start <= end:
+        year = start.year
+        month = start.month
+        date = start.strftime("%Y%m")
+
+        last_day = calendar.monthrange(year, month)[1]
+        request_start = f"{date}01"
+        request_end = f"{date}{last_day}"
+        print(start)
+        df = get_bus_data_range(request_start, request_end)
+
+        if df is not None and not df.empty:
+            file_path = os.path.join(raw_folder,f"bus_data_{date}.csv")
+            df.to_csv(file_path, index=False, encoding='utf-8')
+            print(f"{date} 저장완료")
+
+            hdfs_dir = "user/maria_dev/BDP/data/raw"
+
+            hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
+            
+            try:
+                subprocess.run(hdfs_commnad, shell=True, check=True)
+                print("HDFS 적재완료")
+
+            except subprocess.CalledProcessError as e:
+                print(f"HDFS 적재 실패: {e}")
+
+        if month == 12:
+            start = start.replace(year = year +1, month =1)
+        else:
+            start = start.replace(month = month+1)
 
 
-# if __name__ == "__main__":
-#     get_bus_data_daily()
-df = get_bus_data_range("20241201","20241231")
-file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_202412.csv")
+if __name__ == "__main__":
+    target_month = sys.argv[1]
+    print(f"{target_month} 버스 데이터 수집 시작")
+    get_bus_data_month(target_month,target_month)
+    print(f"{target_month} 버스 데이터 수집 완료")
+# get_bus_data_month(202601,202601)
 
-df.to_csv(f"{file_path}",index=False, encoding='utf-8')
-print("저장완료")
+# file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_202501.csv")
+
+# df.to_csv(f"{file_path}",index=False, encoding='utf-8')
+# print("저장완료")

@@ -3,10 +3,15 @@ import os
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+import calendar
+import subprocess
+import sys
+
 
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
-raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
+# raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
+raw_folder = os.path.join(os.getcwd(),"data","raw")
 weather_key = os.environ.get("WEATHER_API_KEY")
 
 
@@ -70,8 +75,53 @@ def get_weather_data_daily():
     df = get_weather_data(target_date)
     df.to_csv(file_path, mode='a',index=False, header=not file_exists, encoding='utf-8')
 
-if __name__ =="__main__":
-    get_weather_data_daily()
+def get_weather_data_month(start_date, end_date):
+    # for month in range(1,13):
+    #     start = datetime.strptime(str(start_date), "%Y%m")
+    #     end = datetime.strptime(str(end_date), "%Y%m")
+    start = datetime.strptime(str(start_date), "%Y%m")
+    end = datetime.strptime(str(end_date), "%Y%m")
+
+    
+    while start <= end:
+        year = start.year
+        month = start.month
+        date = start.strftime("%Y%m")
+
+        last_day = calendar.monthrange(year, month)[1]
+        request_start = f"{date}01"
+        request_end = f"{date}{last_day}"
+        print(start)
+        df = get_weather_data_range(request_start, request_end)
+
+        if df is not None and not df.empty:
+            file_path = os.path.join(raw_folder,f"weather_data_{date}.csv")
+            df.to_csv(file_path, index=False, encoding='utf-8')
+            print(f"{date} 저장완료")
+
+            hdfs_dir = "user/maria_dev/BDP/data/raw"
+
+            hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
+            
+            try:
+                subprocess.run(hdfs_commnad, shell=True, check=True)
+                print("HDFS 적재완료")
+
+            except subprocess.CalledProcessError as e:
+                print(f"HDFS 적재 실패: {e}")
+
+        if month == 12:
+            start = start.replace(year = year +1, month =1)
+        else:
+            start = start.replace(month = month+1)
+
+
+if __name__ == "__main__":
+    target_month = sys.argv[1]
+    print(f"{target_month} 날씨 데이터 수집 시작")
+    get_weather_data_month(target_month,target_month)
+    print(f"{target_month} 날씨 데이터 수집 완료")
+# get_weather_data_month(202501,202512)
 # result = get_weather_data_range("20260527", "20260527")
 # print(result.head())
 # result.to_csv("weather_data_2026.csv", index=False, encoding='utf-8')
