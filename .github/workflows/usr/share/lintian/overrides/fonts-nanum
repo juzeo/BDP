@@ -1,0 +1,3 @@
+# It is obviously a mistake by upstream. But Debian can't fix this without
+# violating the SIL OFL or without changing the font names.
+truetype-font-prohibits-installable-embedding

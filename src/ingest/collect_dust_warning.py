@@ -110,7 +110,7 @@ def get_dust_data_month(start_date, end_date):
         else:
             start = start.replace(month = month+1)
 
-get_dust_data_month(202501,202512)
+#get_dust_data_month(202501,202512)
 # result = get_dust_data_range(20230101,20230131)
 # file_path = os.path.join(raw_folder,f"dust_data_2023.csv")
 # print(result.head())

@@ -1,0 +1,20 @@
+Nanum fonts for Debian
+======================
+
+Known problem: Swapped "CURLY LOGICAL OR/AND" glyphs
+----------------------------------------------------
+
+In NanumGothic and NanumMyeongjo, "CURLY LOGICAL OR" and "CURLY LOGICAL AND"
+glyphs are swapped. Debian can't fix this under the SIL OFL while preserving
+the font name.
+
+Known problem: Incorrect embedding characteristics bits
+-------------------------------------------------------
+
+All fonts have incorrect embedding characteristics bits. It's obviously a
+mistake; it doesn't legally prohibit embedding/editing.
+
+For more information, see ("fsTyep"):
+https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6OS2.html
+
+ -- Changwoo Ryu <cwryu@debian.org>, Fri, 27 Dec 2019 11:45:39 +0900

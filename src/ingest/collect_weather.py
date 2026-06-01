@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 import calendar
 import subprocess
 import sys
+from dotenv import load_dotenv
 
-
+load_dotenv()
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
 # raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")

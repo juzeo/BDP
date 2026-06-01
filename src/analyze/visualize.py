@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 import os
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pyspark.sql import SparkSession
@@ -7,7 +10,8 @@ from pyspark.sql.functions import *
 
 
 
-plt.rcParams['font.family'] = 'Malgun Gothic'
+
+plt.rcParams['font.family'] = 'NanumGothic'
 spark = SparkSession.builder.appName(f"Hive_Data_Visualization").config("spark.sql.catalogImplementation","hive").enableHiveSupport().getOrCreate()
 
 df = spark.table("public_transport_weather.weather_pt_correlation")

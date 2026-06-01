@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="font">
+  <id>fonts-nanum</id>
+  <name>Nanum fonts</name>
+  <summary>Nanum Korean fonts</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>OFL-1.1</project_license>
+  <suggests>fonts-nanum-extra</suggests>
+  <description>
+    <p>
+ Nanum font families are Korean font families which are intended for
+ use on computer screens. These fonts are good with computer LCD
+ monitors because they have used rich hinting techniques like subpixel
+ rendering.
+    </p>
+    <p>
+ This package contains commonly-used Korean font families.
+    </p>
+  </description>
+  <custom>
+    <value key="FontIconText">가나</value>
+    <value key="FontSampleText">다람쥐 헌 쳇바퀴에 타고파</value>
+  </custom>
+  <provides>
+    <font>NanumBarunGothic Regular</font>
+    <font>나눔바른고딕 Regular</font>
+    <font>NanumBarunGothic Bold</font>
+    <font>나눔바른고딕 Bold</font>
+    <font>NanumGothic Regular</font>
+    <font>나눔고딕 Regular</font>
+    <font>NanumGothic Bold</font>
+    <font>나눔고딕 Bold</font>
+    <font>NanumGothicCoding Regular</font>
+    <font>나눔고딕코딩 Regular</font>
+    <font>NanumGothicCoding Bold</font>
+    <font>나눔고딕코딩 Bold</font>
+    <font>NanumMyeongjo Regular</font>
+    <font>나눔명조 Regular</font>
+    <font>NanumMyeongjo Bold</font>
+    <font>나눔명조 Bold</font>
+    <font>NanumSquare Bold</font>
+    <font>나눔스퀘어 Bold</font>
+    <font>NanumSquare Regular</font>
+    <font>나눔스퀘어 Regular</font>
+    <font>NanumSquareRound Bold</font>
+    <font>나눔스퀘어라운드 Bold</font>
+    <font>NanumSquareRound Regular</font>
+    <font>나눔스퀘어라운드 Regular</font>
+  </provides>
+  <url type="homepage">https://hangeul.naver.com/2017/nanum</url>
+  <update_contact>cwryu_AT_debian.org</update_contact>
+</component>

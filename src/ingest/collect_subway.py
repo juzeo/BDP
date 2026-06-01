@@ -122,7 +122,7 @@ def get_subway_data_range(start_date, end_date):
             result = pd.concat(df_list, ignore_index=True)
             file_path = os.path.join(raw_folder,f"CARD_SUBWAY_MONTH_{month}.csv")
             result.to_csv(file_path, index=False, encoding='utf-8')
-            hdfs_dir = "user/maria_dev/BDP/data/raw"
+            hdfs_dir = "/user/maria_dev/BDP/data/raw"
 
             hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
             

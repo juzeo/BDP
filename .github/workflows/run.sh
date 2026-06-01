@@ -1,5 +1,11 @@
 #!/bin/bash
 
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export PYTHONIOENCODING=utf-8
+export PYSPARK_PYTHON=python3.6
+export PYSPARK_DRIVER_PYTHON=python3.6
+
 set -e
 
 TARGET_YM=${1:-"202601"}
@@ -7,9 +13,9 @@ TARGET_YM=${1:-"202601"}
 cd /home/maria_dev/BDP
 
 echo " API 수집 및 업로드 중"
-python3.6 src/ingest/collect_bus.py "$TARGET_YM"
-python3.6 src/ingest/collect_dust_warning.py "$TARGET_YM"
-python3.6 src/ingest/collect_weather.py "$TARGET_YM"
+#python3.6 src/ingest/collect_bus.py "$TARGET_YM"
+#python3.6 src/ingest/collect_dust_warning.py "$TARGET_YM"
+#python3.6 src/ingest/collect_weather.py "$TARGET_YM"
 
 echo "Spark 분산 처리 및 Hive 테이블 적재 중"
 spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$TARGET_YM"
