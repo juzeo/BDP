@@ -40,10 +40,10 @@ spark.sql("CREATE DATABASE IF NOT EXISTS public_transport_weather")
 
 #spark = SparkSession.builder.appName(f"spark_processing_ALL)").config("spark.sql.catalogImplementation", "hive").enableHiveSupport().getOrCreate()
 
-bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header=True, inferSchema=True)
-subway_df = spark.read.option("encoding","utf-8").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header=True, inferSchema=True)
-weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_*.csv", header=True, inferSchema=True)
-dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_*.csv", header=True, inferSchema=True)
+bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}*.csv", header=True, inferSchema=True)
+subway_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}*.csv", header=True, inferSchema=True)
+weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_{target_ym}*.csv", header=True, inferSchema=True)
+dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{target_ym}*.csv", header=True, inferSchema=True)
 
 
 # bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
@@ -53,8 +53,10 @@ dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_*.c
 
 # 다운 데이터는 사용일자 api는 USE_YMD
 bus_df = bus_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
-subway_df = subway_df.withColumn("사용일자",to_date(col("사용일자").cast("string"),"yyyyMMdd"))
+subway_df = subway_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
 weather_df = weather_df.withColumn("TM",to_date(col("TM").cast("string"),"yyyyMMdd"))
+weather_df = weather_df.withColumn("TA_MAX", col("TA_MAX").cast("double")) \
+                       .withColumn("TA_MIN", col("TA_MIN").cast("double"))
 dust_df = dust_df.withColumn("TM", to_date(
     substring(col("TM").cast("string"), 1, 8), 
     "yyyyMMdd"
@@ -70,9 +72,9 @@ day_bus = bus_df.groupBy("사용일자").agg(
 ).withColumn("버스승객수",  col("GTON_TNOPE")+col("GTOFF_TNOPE"))
 
 day_subway = subway_df.groupBy("사용일자").agg(
-    sum("승차총승객수").alias("승차총승객수"),
-    sum("하차총승객수").alias("하차총승객수")
-).withColumn("지하철승객수",  col("승차총승객수")+col("하차총승객수"))
+    sum("GTON_TNOPE").alias("GTON_TNOPE"),
+    sum("GTOFF_TNOPE").alias("GTOFF_TNOPE")
+).withColumn("지하철승객수",  col("GTON_TNOPE")+col("GTOFF_TNOPE"))
 
 day_dust = seoul_dust.groupBy("TM").agg(avg("PM10").alias("일평균PM10"))
 
@@ -121,7 +123,7 @@ full_table_name=f"{hive_db}.{hive_table}"
 
 
 
-result_df.write.mode("overwrite").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
+result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
 
 
 save_path  = os.path.join(processed_folder, "Weather_PT_Correlation.csv")

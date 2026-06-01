@@ -122,7 +122,7 @@ if __name__ == "__main__":
     print(f"{target_month} 날씨 데이터 수집 시작")
     get_weather_data_month(target_month,target_month)
     print(f"{target_month} 날씨 데이터 수집 완료")
-# get_weather_data_month(202501,202512)
+# get_weather_data_month(202601,202603)
 # result = get_weather_data_range("20260527", "20260527")
 # print(result.head())
 # result.to_csv("weather_data_2026.csv", index=False, encoding='utf-8')

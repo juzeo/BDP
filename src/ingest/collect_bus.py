@@ -84,71 +84,21 @@ def get_bus_data(target_day):
 def get_bus_data_range(start_date, end_date):
     start = datetime.strptime(start_date, '%Y%m%d')
     end = datetime.strptime(end_date, '%Y%m%d')
-    
-    # df_list =[]
-
-    # for i in range((end-start).days +1):
-    #     date = (start+timedelta(days=i)).strftime("%Y%m%d")
-
-    #     df = get_bus_data(date)
-
-    #     if df is not None:
-    #         df_list.append(df)
-    #         print(f"{date} 수집완료")
-    #     else:
-    #         print(f"{date} 데이터 형식 오류, {df}")
-    # if df_list:
-    #     result_df = pd.concat(df_list, ignore_index=True)
-    #     return result_df
-    # else:
-    #     return None
     dates = [(start+timedelta(days=i)).strftime("%Y%m%d")for i in range((end - start).days+1)]
     
-    month_data = {}
+    df_list=[]
 
     for date in dates:
-        month_name = date[:6]
         df = get_bus_data(date)
 
-        if df is not None:
-            if month_name not in month_data:
-                month_data[month_name]=[]
-            month_data[month_name].append(df)
+        if df is not None and not df.empty:
+            df_list.append(df)
             print(f"{date} 수집완료")
         else:
             print(f"{date} 데이터 형식 오류, {df}")
-    for month, df_list in month_data.items():
-        if df_list:
-            result = pd.concat(df_list, ignore_index=True)
-            file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_{month}.csv")
-            result.to_csv(file_path, index=False, encoding='utf-8')
-            hdfs_dir = "user/maria_dev/BDP/data/raw"
-
-            hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
-            
-            try:
-                subprocess.run(hdfs_commnad, shell=True, check=True)
-                print("HDFS 적재완료")
-
-            except subprocess.CalledProcessError as e:
-                print(f"HDFS 적재 실패: {e}")
-                
-            
-            print(f"{month} 저장 완료")
-
+    return pd.concat(df_list, ignore_index=True) if df_list else None
     
 
-def get_bus_data_daily():
-    target_date = (datetime.now()-timedelta(days=1)).strftime("%Y%m%d")
-    year_month = target_date[:6]
-    file_path = os.path.join(raw_folder,f"bus_data_{year_month}.csv")
-
-    df = get_bus_data(target_date)
-
-    if df is not None:
-        file_exists = os.path.isfile(file_path)
-        df.to_csv(file_path, mode='a',index=False, header=not file_exists, enccoding='utf-8')
-        
 def get_bus_data_month(start_date, end_date):
     start = datetime.strptime(str(start_date), "%Y%m")
     end = datetime.strptime(str(end_date), "%Y%m")
@@ -166,7 +116,7 @@ def get_bus_data_month(start_date, end_date):
         df = get_bus_data_range(request_start, request_end)
 
         if df is not None and not df.empty:
-            file_path = os.path.join(raw_folder,f"bus_data_{date}.csv")
+            file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_{date}.csv")
             df.to_csv(file_path, index=False, encoding='utf-8')
             print(f"{date} 저장완료")
 
@@ -192,7 +142,7 @@ if __name__ == "__main__":
     print(f"{target_month} 버스 데이터 수집 시작")
     get_bus_data_month(target_month,target_month)
     print(f"{target_month} 버스 데이터 수집 완료")
-# get_bus_data_month(202601,202601)
+# get_bus_data_month(202602,202603)
 
 # file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_202501.csv")
 
