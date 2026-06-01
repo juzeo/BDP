@@ -8,15 +8,15 @@ export PYSPARK_DRIVER_PYTHON=python3.6
 
 set -e
 
-TARGET_YM=${1:}
+TARGET_YM=$1
 
 cd /home/maria_dev/BDP
 
-HIVE_DB = "public_transport_weather"
-HIVE_TABLE = "weather_pt_correlation"
-LOCAL_RAW_DIR = "/home/maria_dev/BDP/data/raw"
-HDFS_RAW_DIR = "/user/maria_dev/BDP/data/raw"
-THREE_MONTH = $(data -d "3 months ago" +%Y%m 2>/dev/null || data -v-3m +%Y%m 2>/dev/null)
+HIVE_DB="public_transport_weather"
+HIVE_TABLE="weather_pt_correlation"
+LOCAL_RAW_DIR="/home/maria_dev/BDP/data/raw"
+HDFS_RAW_DIR="/user/maria_dev/BDP/data/raw"
+THREE_MONTH=$(date -d "3 months ago" +%Y%m 2>/dev/null || data -v-3m +%Y%m 2>/dev/null)
         
 
 if [ -z "$TARGET_YM" ]; then
@@ -24,10 +24,10 @@ if [ -z "$TARGET_YM" ]; then
     spark-submit --master local[*] src/analyze/visualize.py
 
 else
-    echo "HIVE 테이블 ${HIVE.DB}.${HIVE_TABLE}"
+    echo "HIVE 테이블 ${HIVE_DB}.${HIVE_TABLE}"
     PARTITION_CHECK=$(hive -e "SHOW PARTITIONS ${HIVE_DB}.${HIVE_TABLE} PARTITION(yyyymm='$TARGET_YM');" 2>/dev/null ||true)
 
-    if [ -n "$PARTITION_CHECK"]; then
+    if [ -n "$PARTITION_CHECK" ]; then
         echo "${TARGET_YM}데이터가 이미 Hive테이블에 적재되어 있습니다 수집 및 전처리 과정을 건너뛰고 시각화 단계로 진행합니다"
     else
         echo  "${TARGET_YM}데이터가 HIVE에 없습니다 파이프라인을 가동합니다"
@@ -56,10 +56,10 @@ else
         else
             echo "{$TARGET_YM} 지하철 파일이 누락되었습니다. api 수집"
             
-            if [ "$TARGET_YM" -lt "$THREE_MONTH"]; then
+            if [ "$TARGET_YM" -lt "$THREE_MONTH" ]; then
                 SUBWAY_FILE="${LOCAL_RAW_DIR}/CARD_SUBWAY_MONTH_${TARGET_YM}.csv"
 
-                if [-f "$SUBWAY_FILE"]; then
+                if [-f "$SUBWAY_FILE" ]; then
                     python3.6 src/ingest/collect_subway.py "$TARGET_YM"
                 else
                     echo "서울 지하철 데이터를 3개월 전까지만 API로 반환합니다"
@@ -69,19 +69,12 @@ else
             else
                 python3.6 src/ingest/collect_subway.py "$TARGET_YM"  
             
+        	fi
         fi
-            echo "Spark 분산 처리 및 Hive 테이블 적재 중"
-            spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$TARGET_YM"
-
-        echo "Spark SQL 분석 및 시각화 PNG 생성 중"
-        spark-submit --master local[*] src/analyze/visualize.py
-        echo "완료"
+        echo "Spark 분산 처리 및 Hive 테이블 적재 중"
+        spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$TARGET_YM"
     fi
+    echo "Spark SQL 분석 및 시각화 PNG 생성 중"
+    spark-submit --master local[*] src/analyze/visualize.py
+    echo "완료"
 fi
-
-
-
-
-
-
-

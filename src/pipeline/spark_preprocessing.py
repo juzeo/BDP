@@ -24,26 +24,26 @@ target_ym = sys.argv[1]
 
 app_name_str = "spark_processing_{}".format(target_ym)
 
-spark = (SparkSession.builder
-         .appName(app_name_str)
-         .config("spark.sql.catalogImplementation", "hive")
-         .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-         .config("javax.jdo.option.ConnectionURL", "jdbc:mysql://localhost:3306/hive?createDatabaseIfNotExist=true")
-         .config("javax.jdo.option.ConnectionDriverName", "com.mysql.jdbc.Driver")
-         .config("javax.jdo.option.ConnectionUserName", "hive")
-         .config("javax.jdo.option.ConnectionPassword", "hive") 
-         .config("spark.sql.warehouse.dir", "hdfs:///apps/hive/warehouse")
-         .enableHiveSupport()
-         .getOrCreate())
+spark = SparkSession.builder \
+    .appName(app_name_str) \
+    .config("spark.sql.catalogImplementation", "hive") \
+    .config("spark.sql.sources.partitionOverwriteMode", "dynamic") \
+    .config("javax.jdo.option.ConnectionURL", "jdbc:mysql://localhost:3306/hive?createDatabaseIfNotExist=true") \
+    .config("javax.jdo.option.ConnectionDriverName", "com.mysql.jdbc.Driver") \
+    .config("javax.jdo.option.ConnectionUserName", "hive") \
+    .config("javax.jdo.option.ConnectionPassword", "hive") \
+    .config("spark.sql.warehouse.dir", "hdfs:///apps/hive/warehouse") \
+    .enableHiveSupport() \
+    .getOrCreate()
 
 spark.sql("CREATE DATABASE IF NOT EXISTS public_transport_weather")
 
 #spark = SparkSession.builder.appName(f"spark_processing_ALL)").config("spark.sql.catalogImplementation", "hive").enableHiveSupport().getOrCreate()
 
-bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}*.csv", header=True, inferSchema=True)
-subway_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}*.csv", header=True, inferSchema=True)
-weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_{target_ym}*.csv", header=True, inferSchema=True)
-dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{target_ym}*.csv", header=True, inferSchema=True)
+bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+subway_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_{target_ym}.csv", header=True, inferSchema=True)
+dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{target_ym}.csv", header=True, inferSchema=True)
 
 
 # bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
