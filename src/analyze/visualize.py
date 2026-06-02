@@ -41,8 +41,8 @@ plt.xlabel('비 상태')
 plt.ylabel('평균 승객')
 
 file_name = "rainy_transport_plot.png"
-# save_path = os.path.join(os.getcwd(),file_name)
-plt.savefig(save_path,dpi=300)
+result_path = os.path.join(os.getcwd(),file_name)
+plt.savefig(result_path,dpi=300)
 plt.close()
 
 # 평일 기준 비랑 눈은 대중교통 승하차량에 영향을 줄까
@@ -64,8 +64,8 @@ plt.xlabel('날씨 상태')
 plt.ylabel('평균 승객')
 
 file_name = "severe_weather_transport_plot.png"
-# save_path = os.path.join(os.getcwd(),file_name)
-plt.savefig(save_path,dpi=300)
+result_path = os.path.join(os.getcwd(),file_name)
+plt.savefig(result_path,dpi=300)
 plt.close()
 
 
@@ -90,8 +90,8 @@ plt.xlabel('황사 상태')
 plt.ylabel('평균 승객')
 
 file_name = "dust_transport_plot.png"
-
-plt.savefig(save_path,dpi=300)
+result_path = os.path.join(os.getcwd(),file_name)
+plt.savefig(result_path,dpi=300)
 plt.close()
 
 spark.stop()

@@ -121,10 +121,24 @@ hive_db = "public_transport_weather"
 hive_table="weather_pt_correlation"
 full_table_name=f"{hive_db}.{hive_table}"
 
+spark.sql(f"""
+CREATE TABLE IF NOT EXISTS public_transport_weather.weather_pt_correlation (
+  `use_ymd` STRING,
+  `rn_day` DOUBLE,
+  `is_rainy` STRING,
+  `bus_passenger` BIGINT,
+  `subway_passenger` BIGINT,
+  `avg_pm10` DOUBLE,
+  `dust_grade` STRING,
+  `is_weekday` STRING,
+  `severe_weather` STRING
+) PARTITIONED BY (yyyymm STRING) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+          """)
 
 
-result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
-
+# result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
+result_df.write.mode("append").insertInto(full_table_name)
 
 save_path  = os.path.join(processed_folder, "Weather_PT_Correlation.csv")
 #result_df.to_csv(save_path, index=False, encoding = 'utf-8-sig')
