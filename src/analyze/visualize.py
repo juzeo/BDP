@@ -14,7 +14,7 @@ from pyspark.sql.functions import *
 plt.rcParams['font.family'] = 'NanumGothic'
 spark = SparkSession.builder.appName(f"Hive_Data_Visualization").config("spark.sql.catalogImplementation","hive").enableHiveSupport().getOrCreate()
 
-save_path = os.path.join(os.getcwd(),"data","processed")
+save_path = os.path.join(os.getcwd(),"data","output")
 if not os.path.exists(save_path):
     os.makedirs(save_path)
 
@@ -41,7 +41,7 @@ plt.xlabel('비 상태')
 plt.ylabel('평균 승객')
 
 file_name = "rainy_transport_plot.png"
-result_path = os.path.join(os.getcwd(),file_name)
+result_path = os.path.join(save_path,file_name)
 plt.savefig(result_path,dpi=300)
 plt.close()
 
@@ -64,7 +64,7 @@ plt.xlabel('날씨 상태')
 plt.ylabel('평균 승객')
 
 file_name = "severe_weather_transport_plot.png"
-result_path = os.path.join(os.getcwd(),file_name)
+result_path = os.path.join(save_path,file_name)
 plt.savefig(result_path,dpi=300)
 plt.close()
 
@@ -90,8 +90,9 @@ plt.xlabel('황사 상태')
 plt.ylabel('평균 승객')
 
 file_name = "dust_transport_plot.png"
-result_path = os.path.join(os.getcwd(),file_name)
+result_path = os.path.join(save_path,file_name)
 plt.savefig(result_path,dpi=300)
+print(result_path)
 plt.close()
 
 spark.stop()

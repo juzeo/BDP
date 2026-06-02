@@ -65,5 +65,6 @@ else
     fi
     echo "Spark SQL 분석 및 시각화 PNG 생성 중"
     spark-submit --master local[*] src/analyze/visualize.py
+    
     echo "완료"
 fi
