@@ -20,9 +20,47 @@ THREE_MONTH=$(date -d "3 months ago" +%Y%m 2>/dev/null || data -v-3m +%Y%m 2>/de
         
 
 if [ -z "$TARGET_YM" ]; then
-    echo "입력된 연월이 없습니다. 수집/적재를 건너뛰고 기존 Hive 데이터로 전체 시각화"
-    spark-submit --master local[*] src/analyze/visualize.py
+    echo "입력된 연월이 없습니다. 자료를 확인합니다
+    TABLE_CHECK=$(hive -e "SHOW TABLES IN ${HIVE_DB} LIKE'${HIVE_TABLE}';" 2>/dev/null ||true)"
+    
+    if [[ "$TABLE_CHECK"  != *"${HIVE_TABLE}"* ]]; then
+        echo "HIVE 테이블이 존재하지 않습니다"
 
+        HDFS_FILES=$(hdfs dfs -ls "${HDFS_RAW_DIR}" 2>/dev/null || true)
+        
+        if [ -z "HDFS_FILES" ]; then
+            echo "HDFS에 파일이 존재하지 않습니다"
+
+            LOCAL_FILES=$(ls "${LOCAL_RAW_DIR}" 2>/dev/null || true)
+            if [ -z "LOCAL_FILES" ]; then
+                echo "로컬 파일 HDFS에 업로드"
+                hdfs dfs -mkdir -p "${HDFS_RAW_DIR}" 2>/dev/null || true
+                hdfs dfs -put "${LOCAL_RAW_DIR}/*.csv" "${HDFS_RAW_DIR}" 2>/dev/null || true}
+            else
+                echo "로컬 경로에도 데이터가 없습니다 API 수집을 진행해주세요"
+                exit 1
+            fi
+        else
+            echo "HDFS에 데이터 존재"
+        fi
+        echo "Spark 분산 처리 및 Hive 테이블 적재 중"
+        YMS=$(hdfs dfs -ls "${HDFS_RAW_DIR}/BUS_STATION_BOARDING_MONTH_"*.csv 2>/dev/null | grep -o 'MONTH_[0-9]\{6\}' | sed 's/MONTH_//' || true)
+
+        for YM in YMS; do
+            echo "HIVE 테이블 생성 $YM"
+            spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$YM"
+        done
+    else
+        echo "HIVE 테이블 ${HIVE_DB}.${HIVE_TABLE}"
+    fi
+
+    echo "Spark SQL 분석 및 시각화 PNG 생성 중"
+    spark-submit --master local[*] src/analyze/visualize.py
+    echo "작업 완료"
+    exit 0
+fi
+if [ -n "$PARTITION_CHECK" ] && [[ "$PARTITION_CHECK" != *"Table not found"* ]]; then
+    echo "${TARGET_YM}데이터가 이미 Hive테이블에 적재되어 있습니다"
 else
     echo "HIVE 테이블 ${HIVE_DB}.${HIVE_TABLE} 확인 중"
 
