@@ -24,26 +24,24 @@ target_ym = sys.argv[1]
 
 app_name_str = "spark_processing_{}".format(target_ym)
 
-spark = SparkSession.builder \
-    .appName(app_name_str) \
-    .config("spark.sql.catalogImplementation", "hive") \
-    .config("spark.sql.sources.partitionOverwriteMode", "dynamic") \
-    .config("javax.jdo.option.ConnectionURL", "jdbc:mysql://localhost:3306/hive?createDatabaseIfNotExist=true") \
-    .config("javax.jdo.option.ConnectionDriverName", "com.mysql.jdbc.Driver") \
-    .config("javax.jdo.option.ConnectionUserName", "hive") \
-    .config("javax.jdo.option.ConnectionPassword", "hive") \
-    .config("spark.sql.warehouse.dir", "hdfs:///apps/hive/warehouse") \
-    .enableHiveSupport() \
-    .getOrCreate()
+spark = (SparkSession.builder
+    .appName(app_name_str)
+    .getOrCreate())
+
+#    .config("javax.jdo.option.ConnectionURL", "jdbc:mysql://localhost:3306/hive?createDatabaseIfNotExist=true") \
+#    .config("javax.jdo.option.ConnectionDriverName", "com.mysql.jdbc.Driver") \
+#    .config("javax.jdo.option.ConnectionUserName", "hive") \
+#    .config("javax.jdo.option.ConnectionPassword", "hive") \
+#    .config("spark.sql.warehouse.dir", "hdfs:///apps/hive/warehouse") \
 
 spark.sql("CREATE DATABASE IF NOT EXISTS public_transport_weather")
 
 #spark = SparkSession.builder.appName(f"spark_processing_ALL)").config("spark.sql.catalogImplementation", "hive").enableHiveSupport().getOrCreate()
 
-bus_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}.csv", header=True, inferSchema=True)
-subway_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}.csv", header=True, inferSchema=True)
-weather_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/weather_data_{target_ym}.csv", header=True, inferSchema=True)
-dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{target_ym}.csv", header=True, inferSchema=True)
+bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+subway_df = spark.read.csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}.csv", header=True, inferSchema=True)
+weather_df = spark.read.csv(f"{raw_folder}/weather_data_{target_ym}.csv", header=True, inferSchema=True)
+dust_df = spark.read.csv(f"{raw_folder}/dust_data_{target_ym}.csv", header=True, inferSchema=True)
 
 
 # bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
@@ -52,8 +50,13 @@ dust_df = spark.read.option("encoding","cp949").csv(f"{raw_folder}/dust_data_{ta
 
 
 # 다운 데이터는 사용일자 api는 USE_YMD
+if "USE_YMD" in subway_df.columns:
+    subway_df = subway_df.withColumn("사용일자", to_date(col("USE_YMD").cast("string"), "yyyyMMdd"))
+elif "사용일자" in subway_df.columns:
+    subway_df = subway_df.withColumn("사용일자", to_date(col("사용일자").cast("string"), "yyyyMMdd"))
+
 bus_df = bus_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
-subway_df = subway_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
+#subway_df = subway_df.withColumn("사용일자",to_date(col("USE_YMD").cast("string"),"yyyyMMdd"))
 weather_df = weather_df.withColumn("TM",to_date(col("TM").cast("string"),"yyyyMMdd"))
 weather_df = weather_df.withColumn("TA_MAX", col("TA_MAX").cast("double")) \
                        .withColumn("TA_MIN", col("TA_MIN").cast("double"))
@@ -71,10 +74,16 @@ day_bus = bus_df.groupBy("사용일자").agg(
     sum("GTOFF_TNOPE").alias("GTOFF_TNOPE")
 ).withColumn("버스승객수",  col("GTON_TNOPE")+col("GTOFF_TNOPE"))
 
-day_subway = subway_df.groupBy("사용일자").agg(
-    sum("GTON_TNOPE").alias("GTON_TNOPE"),
-    sum("GTOFF_TNOPE").alias("GTOFF_TNOPE")
-).withColumn("지하철승객수",  col("GTON_TNOPE")+col("GTOFF_TNOPE"))
+if "GTON_TNOPE" in subway_df.columns:
+    day_subway = subway_df.groupBy("사용일자").agg(
+        sum("GTON_TNOPE").alias("지하철_승차"),
+        sum("GTOFF_TNOPE").alias("지하철_하차")
+    ).withColumn("지하철승객수", col("지하철_승차") + col("지하철_하차"))
+elif "승차총승객수" in subway_df.columns:
+    day_subway = subway_df.groupBy("사용일자").agg(
+        sum("승차총승객수").alias("지하철_승차"),
+        sum("하차총승객수").alias("지하철_하차")
+    ).withColumn("지하철승객수", col("지하철_승차") + col("지하철_하차"))
 
 day_dust = seoul_dust.groupBy("TM").agg(avg("PM10").alias("일평균PM10"))
 
@@ -117,28 +126,9 @@ result_df = merged_df.select(
     col("YYYYMM")
 )
 
-hive_db = "public_transport_weather"
-hive_table="weather_pt_correlation"
-full_table_name=f"{hive_db}.{hive_table}"
-
-spark.sql(f"""
-CREATE TABLE IF NOT EXISTS public_transport_weather.weather_pt_correlation (
-  `use_ymd` STRING,
-  `rn_day` DOUBLE,
-  `is_rainy` STRING,
-  `bus_passenger` BIGINT,
-  `subway_passenger` BIGINT,
-  `avg_pm10` DOUBLE,
-  `dust_grade` STRING,
-  `is_weekday` STRING,
-  `severe_weather` STRING
-) PARTITIONED BY (yyyymm STRING) 
-ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
-          """)
-
-
-# result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").saveAsTable(full_table_name)
-result_df.write.mode("append").insertInto(full_table_name)
+hdfs_output_path = "hdfs:///warehouse/tablespace/external/hive/weather_pt_correlation"
+result_df.write.mode("append").format("csv").option("header","false").partitionBy("YYYYMM").save(hdfs_output_path)
+#result_df.write.mode("append").insertInto(full_table_name)
 
 save_path  = os.path.join(processed_folder, "Weather_PT_Correlation.csv")
 #result_df.to_csv(save_path, index=False, encoding = 'utf-8-sig')

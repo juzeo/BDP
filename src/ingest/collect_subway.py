@@ -118,7 +118,7 @@ def get_subway_data_month(start_date, end_date):
         df = get_subway_data_range(request_start, request_end)
 
         if df is not None and not df.empty:
-            file_path = os.path.join(raw_folder,f"CARD_SUBWAY_MONTH_{month}.csv")
+            file_path = os.path.join(raw_folder,f"CARD_SUBWAY_MONTH_{date}.csv")
             df.to_csv(file_path, index=False, encoding='utf-8')
             print(f"{date} 저장완료")
 
