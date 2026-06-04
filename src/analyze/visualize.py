@@ -44,6 +44,8 @@ result_df = select.toPandas()
 
 result_df['is_rainy']=pd.Categorical(result_df['is_rainy'],categories=['많이 옴','조금 옴','안 옴'])
 
+result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
+
 plt.figure(figsize=(11,6))
 sns.barplot(x='is_rainy',y='passenger', hue='transport',data=result_df)
 
@@ -57,7 +59,7 @@ result_path = os.path.join(save_path,file_name)
 plt.savefig(result_path,dpi=300)
 plt.close()
 
-# 평일 기준 비랑 눈은 대중교통 승하차량에 영향을 줄까
+# 주말 기준 폭염과 한파는 대중교통 승하차량에 영향을 줄까
 analysis_2 = df.filter(col("is_weekday")=="주말")\
             .groupBy("severe_weather")\
             .agg(round(avg('bus_passenger'),0).alias('avg_bus'),
@@ -70,6 +72,7 @@ select = analysis_2.select(
 
 result_df = select.toPandas()
 
+result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
 plt.figure(figsize=(11,6))
 sns.barplot(x='severe_weather',y='passenger', hue='transport',data=result_df)
 
@@ -99,6 +102,7 @@ result_df = select.toPandas()
 
 result_df['dust_grade']=pd.Categorical(result_df['dust_grade'],categories=['좋음','보통','나쁨','매우 나쁨'])
 
+result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
 plt.figure(figsize=(11,6))
 sns.barplot(x='dust_grade',y='passenger', hue='transport',data=result_df)
 
