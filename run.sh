@@ -51,9 +51,9 @@ check_partition_file_exist() {
 
 if [ -z "$TARGET_YM" ]; then
     echo "입력된 연월이 없습니다. 자료를 확인합니다"
-    TABLE_CHECK=$(hive -e "SHOW TABLES IN ${HIVE_DB} LIKE '${HIVE_TABLE}';" 2>/dev/null ||true)
     
-    if [[ "$TABLE_CHECK"  != *"${HIVE_TABLE}"* ]]; then
+    HDFS_PARTITIONS=$(hdfs dfs -ls "${HDFS_PROCESSED_DIR}" 2>/dev/null || true)
+    if [[ -z "$HDFS_PARTITIONS" ]]; then
         echo "HIVE 테이블이 존재하지 않습니다"
         
 
