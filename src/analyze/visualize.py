@@ -27,7 +27,27 @@ save_path = os.path.join(os.getcwd(),"data","output")
 if not os.path.exists(save_path):
     os.makedirs(save_path)
 
-df = spark.table("public_transport_weather.weather_pt_correlation")
+spark.sql("USE public_transport_weather")
+
+spark.sql("""
+CREATE EXTERNAL TABLE IF NOT EXISTS weather_pt_correlation (
+  use_ymd STRING,
+  rn_day DOUBLE,
+  is_rainy STRING,
+  bus_passenger BIGINT,
+  subway_passenger BIGINT,
+  avg_pm10 DOUBLE,
+  dust_grade STRING,
+  is_weekday STRING,
+  severe_weather STRING
+) PARTITIONED BY (yyyymm STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n'
+LOCATION 'hdfs:///warehouse/tablespace/external/hive/weather_pt_correlation'
+""")
+
+spark.sql("MSCK REPAIR TABLE weather_pt_correlation")
+
+df = spark.table("weather_pt_correlation")
 # 평일 기준 비랑 눈은 대중교통 승하차량에 영향을 줄까
 analysis_1 = df.filter(col("is_weekday")=="평일")\
             .groupBy("is_rainy")\

@@ -19,7 +19,9 @@ HDFS_RAW_DIR="/user/maria_dev/BDP/data/raw"
 
 HDFS_PROCESSED_DIR="/warehouse/tablespace/external/hive/weather_pt_correlation"
 THREE_MONTH=$(date -d "3 months ago" +%Y%m 2>/dev/null || data -v-3m +%Y%m 2>/dev/null)
+
 hdfs dfs -mkdir -p "${HDFS_PROCESSED_DIR}" 2>/dev/null || true
+sudo -u hdfs hdfs dfs -chown -R hive:hadoop "${HDFS_PROCESSED_DIR}" 2>/dev/null || true
 hdfs dfs -chmod 777 "${HDFS_PROCESSED_DIR}" 2>/dev/null || true
 
 hive -e "CREATE DATABASE IF NOT EXISTS ${HIVE_DB};"
@@ -40,6 +42,8 @@ ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
 LOCATION '${HDFS_PROCESSED_DIR}';
 "
 sleep 3
+hive -e "MSCK REPAIR TABLE public_transport_weather.weather_pt_correlation;"
+hive -e "SHOW PARTITIONS public_transport_weather.weather_pt_correlation;"
 
 check_partition_file_exist() {
     local YM=$1
@@ -52,8 +56,8 @@ check_partition_file_exist() {
 if [ -z "$TARGET_YM" ]; then
     echo "입력된 연월이 없습니다. 자료를 확인합니다"
     
-    HDFS_PARTITIONS=$(hdfs dfs -ls "${HDFS_PROCESSED_DIR}" 2>/dev/null || true)
-    if [[ -z "$HDFS_PARTITIONS" ]]; then
+    HDFS_PARTITIONS=$(hdfs dfs -ls "${HDFS_PROCESSED_DIR}" 2>/dev/null | grep -c 'yyyymm=' || true)
+    if [ -z "$HDFS_PARTITIONS" ] || [ "$HDFS_PARTITIONS" -eq 0 ]; then
         echo "HIVE 테이블이 존재하지 않습니다"
         
 
@@ -62,11 +66,12 @@ if [ -z "$TARGET_YM" ]; then
         if [ -z "$HDFS_FILES" ]; then
             echo "HDFS에 파일이 존재하지 않습니다"
 
+            hdfs dfs -mkdir -p "${HDFS_RAW_DIR}" 2>/dev/null || true
             LOCAL_FILES=$(ls "${LOCAL_RAW_DIR}"/*.csv 2>/dev/null || true)
             if [ -n "$LOCAL_FILES" ]; then
                 echo "로컬 파일 HDFS에 업로드"
                 hdfs dfs -mkdir -p "${HDFS_RAW_DIR}" 2>/dev/null || true
-                hdfs dfs -put "${LOCAL_RAW_DIR}/*.csv" "${HDFS_RAW_DIR}" 2>/dev/null || true
+                hdfs dfs -put "${LOCAL_RAW_DIR}"/*.csv "${HDFS_RAW_DIR}" 2>/dev/null || true
             else
                 echo "로컬 경로에도 데이터가 없습니다 API 수집을 진행해주세요"
                 exit 1
@@ -83,15 +88,17 @@ if [ -z "$TARGET_YM" ]; then
                 echo "$YM 테이블 존재"
             else
                 echo "HIVE 테이블 생성 $YM"
-                spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$YM"
+                spark-submit --master "local[*]" src/pipeline/spark_preprocessing.py "$YM"
             fi
         done
+        hive -e "MSCK REPAIR TABLE ${HIVE_DB}.${HIVE_TABLE};"
     else
         echo "HIVE 테이블 ${HIVE_DB}.${HIVE_TABLE}"
+        hive -e "MSCK REPAIR TABLE ${HIVE_DB}.${HIVE_TABLE};"
     fi
 
     echo "Spark SQL 분석 및 시각화 PNG 생성 중"
-    spark-submit --master local[*] src/analyze/visualize.py
+    spark-submit --master "local[*]" src/analyze/visualize.py
     echo "작업 완료"
     exit 0
 fi
@@ -123,7 +130,7 @@ else
                 hdfs dfs -put "${LOCAL_RAW_DIR}/${EXPECT_FILE}" "${HDFS_RAW_DIR}/"
             else
                 echo "{$EXPECT_FILE} 파일이 누락되었습니다. api 수집"
-                if [ "$FILE_PREFIX" = "CARD_SUBWAY_MONTH" && [ "$TARGET_YM" -lt "$THREE_MONTH" ] ]; then
+                if [ "$FILE_PREFIX" = "CARD_SUBWAY_MONTH" ] && [ "$TARGET_YM" -lt "$THREE_MONTH" ]; then
                     echo "서울 지하철 데이터를 3개월 전까지만 API로 반환합니다"
                     echo "해당 연월은 지원하지 않으므로 ${LOCAL_RAW_DIR}/${EXPECT_FILE} 경로에 저장해 주신 후 다시 실행해주세요"
                     exit 1
@@ -138,11 +145,11 @@ else
         check_and_upload "dust_data" "collect_dust_warning.py"
         check_and_upload "weather_data" "collect_weather.py"
         echo "Spark 분산 처리 및 Hive 테이블 적재 중"
-        spark-submit --master local[*] src/pipeline/spark_preprocessing.py "$TARGET_YM"
+        spark-submit --master "local[*]" src/pipeline/spark_preprocessing.py "$TARGET_YM"
         hive -e "MSCK REPAIR TABLE ${HIVE_DB}.${HIVE_TABLE};"
     fi
     echo "Spark SQL 분석 및 시각화 PNG 생성 중"
-    spark-submit --master local[*] src/analyze/visualize.py
+    spark-submit --master "local[*]" src/analyze/visualize.py
     hive -e "MSCK REPAIR TABLE ${HIVE_DB}.${HIVE_TABLE};"
     echo "완료"
 
