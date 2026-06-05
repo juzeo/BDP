@@ -51,6 +51,7 @@ sns.barplot(x='is_rainy',y='passenger', hue='transport',data=result_df)
 
 #ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+plt.title('평일 기준 비랑 눈은 대중교통 승하차량에 영향을 줄까')
 plt.xlabel('비 상태')
 plt.ylabel('평균 승객')
 
@@ -78,6 +79,7 @@ sns.barplot(x='severe_weather',y='passenger', hue='transport',data=result_df)
 
 #ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+plt.title('주말 기준 폭염과 한파는 대중교통 승하차량에 영향을 줄까')
 plt.xlabel('날씨 상태')
 plt.ylabel('평균 승객')
 
@@ -108,6 +110,7 @@ sns.barplot(x='dust_grade',y='passenger', hue='transport',data=result_df)
 
 #ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+plt.title('주말 기준 미세먼지는 주말 승하차량에 영향을 미칠까')
 plt.xlabel('황사 상태')
 plt.ylabel('평균 승객')
 
