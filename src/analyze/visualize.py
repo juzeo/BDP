@@ -44,7 +44,7 @@ result_df = select.toPandas()
 
 result_df['is_rainy']=pd.Categorical(result_df['is_rainy'],categories=['많이 옴','조금 옴','안 옴'])
 
-result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
+result_df.to_csv(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
 
 plt.figure(figsize=(11,6))
 sns.barplot(x='is_rainy',y='passenger', hue='transport',data=result_df)
@@ -73,7 +73,7 @@ select = analysis_2.select(
 
 result_df = select.toPandas()
 
-result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
+result_df.to_csv(os.path.join(save_path, "severe_weather_transport_data.csv"), index=False, encoding="utf-8")
 plt.figure(figsize=(11,6))
 sns.barplot(x='severe_weather',y='passenger', hue='transport',data=result_df)
 
@@ -104,7 +104,7 @@ result_df = select.toPandas()
 
 result_df['dust_grade']=pd.Categorical(result_df['dust_grade'],categories=['좋음','보통','나쁨','매우 나쁨'])
 
-result_df.to_save(os.path.join(save_path, "rainy_transport_data.csv"), index=False, encoding="utf-8")
+result_df.to_csv(os.path.join(save_path, "dust_transport_data.csv"), index=False, encoding="utf-8")
 plt.figure(figsize=(11,6))
 sns.barplot(x='dust_grade',y='passenger', hue='transport',data=result_df)
 

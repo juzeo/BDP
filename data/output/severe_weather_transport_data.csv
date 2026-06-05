@@ -1,0 +1,10 @@
+severe_weather,transport,passenger
+정상,bus,6918226.0
+정상,subway,10507495.0
+정상,total,17425721.0
+폭염,bus,6871687.0
+폭염,subway,9618314.0
+폭염,total,16490001.0
+한파,bus,5565043.0
+한파,subway,8173905.0
+한파,total,13738948.0
