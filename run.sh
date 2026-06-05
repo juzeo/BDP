@@ -79,7 +79,7 @@ if [ -z "$TARGET_YM" ]; then
 
         for YM in $YMS; do
             
-            if check_partition_file_exsit "$YM"; then
+            if check_partition_file_exist "$YM"; then
                 echo "$YM 테이블 존재"
             else
                 echo "HIVE 테이블 생성 $YM"
