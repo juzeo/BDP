@@ -26,8 +26,21 @@
 - 데이터와 기상 데이터 Join 등 연산
 - 연산 결과를 토대로 핵심 질문에 대한 그래피 및 지도 등 알맞는 방법으로 시각화
 
+## 실행 방법
+<!-- 필요 라이브러리 설치-->
+- python3.6 -m pip install --user pandas matplotlib seaborn
+<!-- 폰트 설치-->
+- sudo apt-get update && sudo apt-get install -y fonts-nanum* || sudo yum install -y nuvola-fonts-tokyo nanum-gothic-fonts
+<!-- root directory에서 자동화 스크립트 -->
+./run.sh
+<!-- 자동 수집 포함 전처리 시각화 자동화 -->
+./run.sh yyyymm
+
+
+
 ## AI Tool Usage
-- Gemini : 대중교통 API 데이터 스크립트 작성 중 발생한 JSONDecodeError 디버깅 및 URL 파라미터 오류 해결
-- Gemini : 기상청 API 데이터 스크립트 작성 중 발생한 EmptyDataError 디버깅 해결
-- Gemini : 일주일 데이터 중 주말데이터만 가져오는 방법의 아이디어 획득
+- Gemini : API 데이터 스크립트 작성 중 발생한 JSONDecodeError, EmptyDataError 디버깅 및 URL 파라미터 오류 해결
+- Gemini : 자동화 스크립트 구현 중 Bash 문법 가이드 및 실행 조건문 디버깅
+- Gemini : HDFS 데이터를 HIVE테이블에 적재시 발생하는 파이프라인 오류 디버깅
+- Gemini : Bash 및 Hive 적재 관련 권한 문제 해결
 
