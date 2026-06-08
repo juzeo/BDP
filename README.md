@@ -29,8 +29,7 @@
 ## 실행 방법
 <!-- 필요 라이브러리 설치-->
 - python3.6 -m pip install --user pandas matplotlib seaborn
-<!-- 폰트 설치-->
-- sudo apt-get update && sudo apt-get install -y fonts-nanum* || sudo yum install -y nuvola-fonts-tokyo nanum-gothic-fonts
+
 <!-- root directory에서 자동화 스크립트 -->
 ./run.sh
 <!-- 자동 수집 포함 전처리 시각화 자동화 -->

@@ -8,12 +8,19 @@ import seaborn as sns
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from matplotlib.ticker import FuncFormatter
+import matplotlib.font_manager as fm
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+font_path = os.path.join(base_dir, '../../fonts/NanumGothic.ttf')
+
+font_prop=fm.FontProperties(fname=font_path)
+plt.rc('font', family=font_prop.get_name())
+plt.rcParams['axes.unicode_minus']=False
 
 def comma_formatter(x, pos):
 	return f"{int(x):,}"
 
-plt.rcParams['font.family'] = 'NanumGothic'
+# plt.rcParams['font.family'] = 'NanumGothic'
 #spark = SparkSession.builder.appName(f"Hive_Data_Visualization").config("spark.sql.catalogImplementation","hive").enableHiveSupport().getOrCreate()
 
 spark = (SparkSession.builder
