@@ -27,15 +27,15 @@
 - 연산 결과를 토대로 핵심 질문에 대한 그래피 및 지도 등 알맞는 방법으로 시각화
 
 ## 실행 방법
-<!-- 필요 라이브러리 설치-->
+## 필요 라이브러리 설치
 - python3.6 -m pip install --user pandas matplotlib seaborn
 
-<!-- root directory에서 자동화 스크립트 -->
+## root directory에서 자동화 스크립트
 ./run.sh
-<!-- 자동 수집 포함 전처리 시각화 자동화 -->
+## 자동 수집 포함 전처리 시각화 자동화 
 ./run.sh yyyymm
 
-<!-- 만약 하나씩 실행 할 경우 -->
+## 만약 하나씩 실행 할 경우 
 python3.6 src/ingest/collect_subway.py 202605
 python3.6 src/ingest/collect_bus.py 202605
 python3.6 src/ingest/collect_dust_warning.py 202605
