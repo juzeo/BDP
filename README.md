@@ -35,7 +35,15 @@
 <!-- 자동 수집 포함 전처리 시각화 자동화 -->
 ./run.sh yyyymm
 
-
+<!-- 만약 하나씩 실행 할 경우 -->
+python3.6 src/ingest/collect_subway.py 202605
+python3.6 src/ingest/collect_bus.py 202605
+python3.6 src/ingest/collect_dust_warning.py 202605
+python3.6 src/ingest/collect_weather.py 202605
+hdfs dfs -put /home/maria_dev/BDP/data/raw/*_202605.csv /user/maria_dev/BDP/data/raw/
+spark-submit --master "local[*]" src/pipeline/spark_preprocessing.py 202605
+hive -e "MSCK REPAIR TABLE public_transport_weather.weather_pt_correlation;"
+spark-submit --master "local[*]" src/analyze/visualize.py
 
 ## AI Tool Usage
 - Gemini : API 데이터 스크립트 작성 중 발생한 JSONDecodeError, EmptyDataError 디버깅 및 URL 파라미터 오류 해결

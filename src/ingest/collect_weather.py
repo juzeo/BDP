@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 load_dotenv()
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
-# raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
 raw_folder = os.path.join(os.getcwd(),"data","raw")
 weather_key = os.environ.get("WEATHER_API_KEY")
 
@@ -25,7 +24,7 @@ cols = ["TM","STN","WS_AVG","WR_DAY","WD_MAX","WS_MAX","WS_MAX_TM","WD_INS",
         "RN_POW_MAX","RN_POW_MAX_TM","SD_NEW","SD_NEW_TM","SD_MAX","SD_MAX_TM",
         "TE_05","TE_10","TE_15","TE_30","TE_50"
 ]
-#일자료
+#일자로
 def get_weather_data(target_date):
     
     try:
@@ -44,7 +43,6 @@ def get_weather_data(target_date):
     if df.iloc[:,-1].isnull().all():
         df = df.iloc[:,:-1] #마지막열 삭제(결측치)
     df.columns = cols
-    # df =response.text
 
     return df
 def get_weather_data_range(start_date, end_date):
@@ -67,19 +65,8 @@ def get_weather_data_range(start_date, end_date):
         return result_df
     
 
-#전날 데이터 가져오기
-def get_weather_data_daily():
-    target_date=(datetime.now()-timedelta(days=1)).strftime("%Y%m%d")
-    year = target_date[:4]
-    file_path = os.path.join(raw_folder,f"weather_data_{year}.csv")
-
-    df = get_weather_data(target_date)
-    df.to_csv(file_path, mode='a',index=False, header=not file_exists, encoding='utf-8')
 
 def get_weather_data_month(start_date, end_date):
-    # for month in range(1,13):
-    #     start = datetime.strptime(str(start_date), "%Y%m")
-    #     end = datetime.strptime(str(end_date), "%Y%m")
     start = datetime.strptime(str(start_date), "%Y%m")
     end = datetime.strptime(str(end_date), "%Y%m")
 
@@ -122,7 +109,3 @@ if __name__ == "__main__":
     print(f"{target_month} 날씨 데이터 수집 시작")
     get_weather_data_month(target_month,target_month)
     print(f"{target_month} 날씨 데이터 수집 완료")
-# get_weather_data_month(202601,202603)
-# result = get_weather_data_range("20260527", "20260527")
-# print(result.head())
-# result.to_csv("weather_data_2026.csv", index=False, encoding='utf-8')

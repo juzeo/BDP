@@ -8,17 +8,17 @@ from dotenv import load_dotenv
 import calendar
 import sys
 
+# 환경 변수 로드
 load_dotenv()
 
+# 경로 설정
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
-# raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
 seoul_bus_key = os.environ.get("SEOUL_BUS_API_KEY")
 current_path =os.getcwd()
 raw_folder = os.path.join(os.getcwd(),"data","raw")
-# file_path = os.path.join(raw_folder,f"weather_data_{year}.csv")
 
-
+# 특정 날짜 데이터 가져오기
 def get_bus_data(target_day):
 
     start=1
@@ -30,17 +30,20 @@ def get_bus_data(target_day):
             response = requests.get(url)
             data = response.json()
 
-            
+            # 척페이지 호출시 전체 데이터 개수 출력
             if start ==1:
                 total_count=data["CardBusStatisticsServiceNew"]['list_total_count']
                 print(f"총 데이터 수: {total_count}")
             
+            # 실제 데이터 추출 및 리스트 추가
             rows = data["CardBusStatisticsServiceNew"]['row']
             all_data.extend(rows)
             
+            # 가져온 데이터가 1000건 미만이거나 이미 다 가져왔으면 반복문 중단
             if len(rows)<1000 or (start +len(rows)-1)>=total_count:
                 break
 
+            # 다음 1000건을 위해 인덱스 증가
             start += 1000
             end += 1000
 
@@ -52,38 +55,13 @@ def get_bus_data(target_day):
 
     return pd.DataFrame(all_data)
     
-# def get_bus_data_range(start_date, end_date, weekend_only = False):
-    start = datetime.strptime(start_date, '%Y%m%d')
-    end = datetime.strptime(end_date, '%Y%m%d')
-    
-    date_list=[]
-    df_list =[]
 
-    for i in range((end-start).days +1):
-        date_list.append((start+timedelta(days=i)).strftime("%Y%m%d"))
-
-    for date in date_list:
-        if weekend_only:
-            date_obj = datetime.strptime(date, "%Y%m%d")
-            #weekday()의 결과는 0(월)부터 6(일)
-            if date_obj.weekday()<5:
-                continue
-        df = get_bus_data(date)
-
-        if df is not None:
-            df_list.append(df)
-            print(f"{date} 수집완료")
-        else:
-            print(f"{date} 데이터 형식 오류, {df}")
-    if(df_list):
-        result_df = pd.concat(df_list, ignore_index=True)
-        return result_df
-    else:
-        return None
-
+# 시각일부터 종료일까지 날짜별로 get_bus_data() 함수 호출하고 하나의 DataFrame으로 병합하여 반환
 def get_bus_data_range(start_date, end_date):
     start = datetime.strptime(start_date, '%Y%m%d')
     end = datetime.strptime(end_date, '%Y%m%d')
+
+    # 시작일부터 종료일까지 날짜 리스트 생성
     dates = [(start+timedelta(days=i)).strftime("%Y%m%d")for i in range((end - start).days+1)]
     
     df_list=[]
@@ -98,7 +76,7 @@ def get_bus_data_range(start_date, end_date):
             print(f"{date} 데이터 형식 오류, {df}")
     return pd.concat(df_list, ignore_index=True) if df_list else None
     
-
+# 월 단위로 범위를 입력 받아 월별 데이터를 수집한 뒤 로컬 csv 저장 및 HDFS에 적재
 def get_bus_data_month(start_date, end_date):
     start = datetime.strptime(str(start_date), "%Y%m")
     end = datetime.strptime(str(end_date), "%Y%m")
@@ -120,17 +98,19 @@ def get_bus_data_month(start_date, end_date):
             df.to_csv(file_path, index=False, encoding='utf-8')
             print(f"{date} 저장완료")
 
+            # HDFS 적재
             hdfs_dir = "user/maria_dev/BDP/data/raw"
 
             hdfs_commnad=f"hdfs dfs -put {file_path} {hdfs_dir}"
             
             try:
+                # 셀 명령어로 put
                 subprocess.run(hdfs_commnad, shell=True, check=True)
                 print("HDFS 적재완료")
 
             except subprocess.CalledProcessError as e:
                 print(f"HDFS 적재 실패: {e}")
-
+        # 다음 년도로 이동 계산
         if month == 12:
             start = start.replace(year = year +1, month =1)
         else:
@@ -142,9 +122,3 @@ if __name__ == "__main__":
     print(f"{target_month} 버스 데이터 수집 시작")
     get_bus_data_month(target_month,target_month)
     print(f"{target_month} 버스 데이터 수집 완료")
-# get_bus_data_month(202602,202603)
-
-# file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_202501.csv")
-
-# df.to_csv(f"{file_path}",index=False, encoding='utf-8')
-# print("저장완료")

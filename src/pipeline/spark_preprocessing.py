@@ -31,26 +31,15 @@ spark = (SparkSession.builder
     .enableHiveSupport()
     .getOrCreate())
 
-#    .config("javax.jdo.option.ConnectionURL", "jdbc:mysql://localhost:3306/hive?createDatabaseIfNotExist=true") \
-#    .config("javax.jdo.option.ConnectionDriverName", "com.mysql.jdbc.Driver") \
-#    .config("javax.jdo.option.ConnectionUserName", "hive") \
-#    .config("javax.jdo.option.ConnectionPassword", "hive") \
-#    .config("spark.sql.warehouse.dir", "hdfs:///apps/hive/warehouse") \
-
 spark.sql("CREATE DATABASE IF NOT EXISTS public_transport_weather")
 spark.sql("USE public_transport_weather")
 
-#spark = SparkSession.builder.appName(f"spark_processing_ALL)").config("spark.sql.catalogImplementation", "hive").enableHiveSupport().getOrCreate()
 
 bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_{target_ym}.csv", header=True, inferSchema=True)
 subway_df = spark.read.csv(f"{raw_folder}/CARD_SUBWAY_MONTH_{target_ym}.csv", header=True, inferSchema=True)
 weather_df = spark.read.csv(f"{raw_folder}/weather_data_{target_ym}.csv", header=True, inferSchema=True)
 dust_df = spark.read.csv(f"{raw_folder}/dust_data_{target_ym}.csv", header=True, inferSchema=True)
 
-
-# bus_df = spark.read.csv(f"{raw_folder}/BUS_STATION_BOARDING_MONTH_*.csv", header = True, inferSchema=True)
-# subway_df = spark.read.csv(f"{raw_folder}/CARD_SUBWAY_MONTH_*.csv", header = True, inferSchema=True)
-# weather_df = spark.read.csv(f"{raw_folder}/weather_data_*.csv", header = True, inferSchema=True)
 
 
 # 다운 데이터는 사용일자 api는 USE_YMD
@@ -96,9 +85,6 @@ weather_condition = (col("사용일자") == seoul_weather["TM"])
 dust_condition = (col("사용일자") == day_dust["TM"])
 merged_df = (base_df.join(seoul_weather, weather_condition, "inner")
                     .join(day_dust, dust_condition, "left"))
-#merged_df = day_bus.join(day_subway,"사용일자","inner")\
-#                    .join(seoul_weather,day_bus.사용일자==seoul_weather.TM,"inner")\
-#                    .join(day_dust, day_bus.사용일자==day_dust.TM,"left")
 
 merged_df = merged_df.withColumn("IS_RAINY",
                                  when(col("RN_DAY")>=20, "많이 옴")
@@ -132,10 +118,10 @@ result_df = merged_df.select(
 
 hdfs_output_path = "hdfs:///warehouse/tablespace/external/hive/weather_pt_correlation"
 result_df.write.mode("append").format("csv").option("header","false").partitionBy("yyyymm").save(hdfs_output_path)
-#result_df.write.mode("append").insertInto(full_table_name)
+
 
 save_path  = os.path.join(processed_folder, "Weather_PT_Correlation.csv")
-#result_df.to_csv(save_path, index=False, encoding = 'utf-8-sig')
+
 try:
     spark.sql("ALTER TABLE weather_pt_correlation ADD IF NOT EXISTS PARTITION (yyyymm='{}')".format(target_ym))
 except Exception as e:

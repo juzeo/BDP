@@ -12,11 +12,11 @@ load_dotenv()
 
 current_path =os.getcwd()
 root = os.path.dirname(os.path.dirname(current_path))
-# raw_folder = os.path.join("hdfs:///user/maria_dev/BDP/data/raw")
+
 seoul_subway_key = os.environ.get("SEOUL_SUBWAY_API_KEY")
 current_path =os.getcwd()
 raw_folder = os.path.join(os.getcwd(),"data","raw")
-# file_path = os.path.join(raw_folder,f"weather_data_{year}.csv")
+
 
 COLUMN_MAPPING = {
     "사용일자": "USE_YMD",        # API에서는 실제 일자 데이터가 이 키에 담김
@@ -144,9 +144,4 @@ if __name__ == "__main__":
     print(f"{target_month} 지하철 데이터 수집 시작")
     get_subway_data_month(target_month,target_month)
     print(f"{target_month} 지하철 데이터 수집 완료")
-# get_subway_data_month(202604,202604)
 
-# file_path = os.path.join(raw_folder,f"BUS_STATION_BOARDING_MONTH_202501.csv")
-
-# df.to_csv(f"{file_path}",index=False, encoding='utf-8')
-# print("저장완료")

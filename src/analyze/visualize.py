@@ -20,9 +20,6 @@ plt.rcParams['axes.unicode_minus']=False
 def comma_formatter(x, pos):
 	return f"{int(x):,}"
 
-# plt.rcParams['font.family'] = 'NanumGothic'
-#spark = SparkSession.builder.appName(f"Hive_Data_Visualization").config("spark.sql.catalogImplementation","hive").enableHiveSupport().getOrCreate()
-
 spark = (SparkSession.builder
     .appName("Hive_Data_Visualization")
     .config("spark.sql.catalogImplementation", "hive")
@@ -76,7 +73,7 @@ result_df.to_csv(os.path.join(save_path, "rainy_transport_data.csv"), index=Fals
 plt.figure(figsize=(11,6))
 sns.barplot(x='is_rainy',y='passenger', hue='transport',data=result_df)
 
-#ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.title('평일 기준 비랑 눈은 대중교통 승하차량에 영향을 줄까')
 plt.xlabel('비 상태')
@@ -104,7 +101,7 @@ result_df.to_csv(os.path.join(save_path, "severe_weather_transport_data.csv"), i
 plt.figure(figsize=(11,6))
 sns.barplot(x='severe_weather',y='passenger', hue='transport',data=result_df)
 
-#ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.title('주말 기준 폭염과 한파는 대중교통 승하차량에 영향을 줄까')
 plt.xlabel('날씨 상태')
@@ -135,7 +132,6 @@ result_df.to_csv(os.path.join(save_path, "dust_transport_data.csv"), index=False
 plt.figure(figsize=(11,6))
 sns.barplot(x='dust_grade',y='passenger', hue='transport',data=result_df)
 
-#ax.yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
 plt.title('주말 기준 미세먼지는 주말 승하차량에 영향을 미칠까')
 plt.xlabel('황사 상태')
